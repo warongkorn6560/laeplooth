@@ -6,11 +6,11 @@ with open('README.md', 'r') as f:
 setup(
     name='laeplooth',
     packages=find_packages(include=['laeplooth']),
-    version='0.2.3',
+    version='0.3.2',
     description='Translator for loo language',
     author='most.warong',
     install_requires=[
-       'Thaispoon==0.0.2'
+       'pythainlp==2.1.4'
     ],
     entry_points={
         'console_scripts': [

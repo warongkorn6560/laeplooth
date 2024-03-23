@@ -1,1 +1,1 @@
-Thaispoon==0.0.2
+pythainlp==2.1.4
