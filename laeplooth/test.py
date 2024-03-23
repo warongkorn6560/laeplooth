@@ -4,3 +4,4 @@ from main import loo
 
 
 loo(sys.argv[1])
+test
