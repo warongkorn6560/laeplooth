@@ -2,6 +2,9 @@ import re
 from pythainlp.tokenize import syllable_tokenize
 from pythainlp import thai_consonants, thai_tonemarks
 
+
+
+
 class Translator:
     def __init__(self, inputText):
         self.inputText = inputText
@@ -39,7 +42,7 @@ class Translator:
         alpha2, pos2 = self.word2alpha(syl[posSwap2])
 
         s1, s2 = list(syl[posSwap1]), list(syl[posSwap2])
-        
+
         if len(alpha1) == 1:
             s1[pos1], s2[pos2] = alpha2, alpha1
         else:
@@ -48,17 +51,18 @@ class Translator:
         syl[posSwap1], syl[posSwap2] = "".join(s1), "".join(s2)
         
         # ลำ ลัว ละ
-        if syl[posSwap1].startswith(('ลำ', 'ลัว', 'ละ', 'ลา', 'ลั')):
+        if syl[posSwap1].startswith(('ลำ', 'ลัว', 'ละ', 'ลา', 'ลั', 'ลู')) and not any(char in thai_tonemarks for char in syl[posSwap1]):
             syl[posSwap1] = 'ห' + syl[posSwap1]
         
         # ลินกู ลินกุน
         if syl[posSwap1][-1] in thai_consonants and syl[posSwap1][-1] not in ('ล', 'อ'):
-            syl[posSwap2] =syl[posSwap2].replace('ู', 'ุ' + syl[posSwap1][-1])
+                syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
 
         # ใล่ชู ใล่ชุ่ย, ไลปู ไลปุย
         if syl[posSwap1].startswith(('ใ', 'ไ')):
             syl[posSwap2] = syl[posSwap2].replace('ู', 'ุย')
-            if any(char in thai_tonemarks for char in syl[posSwap1]):
+            
+        if any(char in thai_tonemarks for char in syl[posSwap1]):
                 tone_mark = next((char for char in syl[posSwap1] if char in thai_tonemarks), '')
                 syl[posSwap2] = syl[posSwap2][:1] + tone_mark + syl[posSwap2][1:]
 
@@ -81,8 +85,23 @@ class Translator:
         #  ใหลครุย ใลครุย
         if syl[posSwap1].endswith('หล') and syl[posSwap2][0] in thai_consonants:
             syl[posSwap1] = syl[posSwap1].replace('หล', 'ล')
-
             
+        # เหลือหลู เสือหลุู
+        if syl[posSwap1].startswith(('เหลือ')):
+            syl[posSwap1] = syl[posSwap1].replace('หล', 'ส')
+            
+        # ซองลุง ซองลูง
+        if 'อ' in syl[posSwap1]:
+            syl[posSwap2] = syl[posSwap2].replace('ุ', 'ู')
+            
+        # ซู้รู้ ซู้รี้ ซูบลุบ ซูบลีบ
+        if 'ู' in syl[posSwap1] and ('ู' in syl[posSwap2] or 'ุ' in syl[posSwap2]):
+            syl[posSwap2] = syl[posSwap2].replace('ู', 'ี').replace('ุ', 'ี')
+            
+        # ซุมรุม ซุมริม
+        if 'ุ' in syl[posSwap1] and 'ุ' in syl[posSwap2]:
+            syl[posSwap2] = syl[posSwap2].replace('ุ', 'ิ')
+
         return syl
 
     def check_condition(self, syl):
@@ -98,8 +117,24 @@ class Translator:
         else:
             return "ลู"
 
+    def check_syllable(self):
+        # create syllable 
+        # ลยามสุม หละสุหลามหยูม
+        # ลโมยขุย หละขุโลยมุย
+        # ตลาด -> ตะ หลาด
+        if all(char in thai_consonants for char in self.syl[0][:2]):
+            self.syl = [self.syl[0][:1] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
+        # ขโมย -> ขะ โมย
+        if (self.syl[0][0] in thai_consonants and self.syl[0][1] not in thai_consonants) and all(char in thai_consonants for char in self.syl[0][-2:]):
+            self.syl = [self.syl[0][:1] + 'ะ',  self.syl[0][1:]] + self.syl[1:]
+        # if last syllable is 1 character merge it with previous syllable
+        if len(self.syl[-1]) == 1:
+            self.syl[-2] = self.syl[-2] + self.syl[-1]
+            self.syl.pop()
+            
     def get_result(self):
         full = ""
+        self.check_syllable()
         for inSyl in self.syl:
             inSyl = [self.check_condition(inSyl), inSyl]
             full += "".join(self.spoonerism2syl(inSyl))
