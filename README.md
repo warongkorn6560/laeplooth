@@ -22,5 +22,6 @@ Save to grepper
 Contributing
 Contributions are welcome! If you have any ideas for new features, improvements, or bug fixes, feel free to open an issue or submit a pull request.
 
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
+## License
+
+This project is licensed under the MIT License. You are free to use, modify, and distribute this software for both personal and commercial purposes.
