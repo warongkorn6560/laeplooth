@@ -1,25 +1,33 @@
-laeplooth
-laeplooth is a Python package designed for translating text to and from the Loo language inspired by Thaispoon package but adapt to Kratoey logic these days. Loo is a fascinating language with its own unique nuances, and this package aims to facilitate communication by providing translation capabilities.
+# Laeplooth
 
-Features
-Translate text to Loo language.
-Simple and easy-to-use Python API.
+Laeplooth is a Python package designed for translating text to Loo language. Inspired by the Thaispoon package, Laeplooth adapts to modern Kratoey logic while preserving the unique nuances of the Loo language. This package aims to facilitate communication by providing translation capabilities.
 
-# install laeplooth using pip
+## Reference
 
-pip install laeplooth
+I incorporated the logic presented in the YouTube video "https://www.youtube.com/watch?v=s54F7MU-jNI" to enhance the functionality. Special thanks to the creator for sharing their insights and expertise.
 
-# main.py
+## Features
 
+- Translate text to the Loo language.
+- Simple and easy-to-use Python API.
+
+## Installation
+
+You can install Laeplooth using pip:
+`pip install laeplooth`
+
+## Usage
+
+```
 from laeplooth import loo
 
 # Translate text to Loo
-
 loo_text = loo("อีดอก")
 print(loo_text) # Output: "หลอกดูก"
+```
 
-Save to grepper
-Contributing
+## Contributing
+
 Contributions are welcome! If you have any ideas for new features, improvements, or bug fixes, feel free to open an issue or submit a pull request.
 
 ## License
