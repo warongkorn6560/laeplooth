@@ -22,7 +22,7 @@ class Translator:
         self.spell_7 = ['ย']
         self.spell_8 = ['ว']
         self.spell_9 = ['ญ' ,'ณ', 'น', 'ร','ล', 'ฬ']
-        self.short_vowel = ['-ะ' , '-ิ' , '-ึ' , '-ุ' , 'เ-ะ' , 'แ-ะ' , 'โ-ะ' , 'เ-าะ' , 'เ-อะ' , 'เ-ียะ' , 'เ-ือะ' ,'-ัวะ' , 'ฤ' , 'ฦ' , '-ำ' , 'ไ-' , 'ใ-'  , 'เ-า']
+        self.short_vowel = ['-ะ' , '-ั' , '-ิ' , '-ึ' , '-ุ' , 'เ-ะ' , 'แ-ะ' , 'เ-็' , 'แ-็' , 'โ-ะ' , 'เ-าะ' , 'เ-อะ' , 'เ-ียะ' , 'เ-ือะ' ,'-ัวะ' , 'ฤ' , 'ฦ' , '-ำ' , 'ไ-' , 'ใ-'  , 'เ-า']
         self.long_vowel = ['-า',  '-ี', '-ื', '-ู', 'เ-', 'แ-', 'โ-', '-อ', 'เ-อ', 'เ-ีย', 'เ-ือ', '-ัว', 'ฤๅ', 'ฦๅ']
         
         
@@ -66,17 +66,26 @@ class Translator:
 
         syl[posSwap1], syl[posSwap2] = "".join(s1), "".join(s2)
         
-        # ลำ ลัว ละ    
-        if self.is_h_prefix(origInSyl):
+   
+
+
+        # ลำ ลัว ละ  
+        if self.is_h_prefix(origInSyl) and not 'ห' in syl[posSwap1]:
             syl[posSwap1] = 'ห' + syl[posSwap1]
-        
+            if syl[posSwap1].startswith('หแ'):
+                syl[posSwap1] = syl[posSwap1].replace('หแ', 'แห')
+                
+        # หมู
+        if('หลู' == syl[posSwap1]):
+            syl[posSwap1] = syl[posSwap1].replace('หลู', 'ลู')
+
         # ลินกู ลินกุน
-        if syl[posSwap1][-1] in thai_consonants and syl[posSwap1][-1] not in ('ล', 'อ'):
+        if self.get_last_con(syl[posSwap1]) in thai_consonants and self.get_last_con(syl[posSwap1]) not in ('ล', 'อ'):
                 # มาก
-                if  'า' in syl[posSwap1]:
-                    syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1])
-                else:
+                if  self.is_short_vowel(syl[posSwap1]):
                     syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
+                else:
+                    syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1])
 
         # ใล่ชู ใล่ชุ่ย, ไลปู ไลปุย
         if syl[posSwap1].startswith(('ใ', 'ไ')):
@@ -98,7 +107,7 @@ class Translator:
             syl[posSwap2] = syl[posSwap2] + 'ว'
             
         # หละกรู หละกุ
-        if syl[posSwap1].startswith('หละ'):
+        if self.is_short_vowel(syl[posSwap1]):
             syl[posSwap2] = syl[posSwap2].replace('ู', 'ุ')
             
         # ลาษดู หลาษดูษ
@@ -130,11 +139,15 @@ class Translator:
             syl[posSwap1] = 'ลวย'
             
         # ลวยควุย ลวยคุย
-        if 'วุย' in syl[posSwap2]: 
-            syl[posSwap2] = syl[posSwap2].replace('วุย', 'ุย')
+        if 'วูย' in syl[posSwap2]: 
+            syl[posSwap2] = syl[posSwap2].replace('วูย', 'ุย')
             
         if '้ี' in syl[posSwap2]:
             syl[posSwap2] = syl[posSwap2].replace('้ี', 'ี้')
+            
+        # เหลา แหลง
+        syl[posSwap1] = syl[posSwap1].replace('หส', 'ส')
+        syl[posSwap2] = syl[posSwap2].replace('ุา', 'ุ').replace('ูา', 'ู')
 
         return syl
 
@@ -148,6 +161,8 @@ class Translator:
             return 'ลี'
         elif alpha_cond in ['ร', 'ล'] and ('ุ' in syl_list_cond or 'ู' in syl_list_cond):
             return 'ซี'
+        elif alpha_cond in ['หล','หร']:
+            return 'สู'
         else:
             return "ลู"
 
@@ -157,7 +172,7 @@ class Translator:
             self.syl = [self.syl[0][0] + 'ำ']
             
         # ขนม ถนน
-        if len(self.syl[0]) == 3 and all(char in thai_consonants for char in self.syl[0]) and self.syl[0][1] != 'อ':
+        if len(self.syl[0]) == 3 and all(char in thai_consonants for char in self.syl[0]) and self.syl[0][1] != 'อ' and self.syl[0][1] != 'ว':
             self.syl = [self.syl[0][0] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
         
         # ลยามสุม หละสุหลามหยูม
@@ -192,6 +207,14 @@ class Translator:
         # ขโมย -> ขะ โมย 
         if (self.syl[0][0] in thai_consonants and self.syl[0][1] not in thai_consonants) and all(char in thai_consonants for char in self.syl[0][-2:]) and self.syl[0][-2] != 'อ':
             self.syl = [self.syl[0][:1] + 'ะ',  self.syl[0][1:]] + self.syl[1:]
+            
+            
+        # อิดอก
+        index = next((i for i, s in enumerate(self.syl) if s.startswith('อิด')), None)
+        if index is not None:
+            self.syl[index] = self.syl[index][:2]
+            self.syl[index + 1] = 'ด' + self.syl[index + 1]
+
                 
         # if last syllable is 1 character merge it with previous syllable
         merged_array = []
@@ -240,12 +263,17 @@ class Translator:
         # กลาง เป็น ไม่มี ห
         if self.get_first_con(syl) not in [self.high_consonants, self.low_consonants] and not self.is_death(syl):
             return False
+        # แม่ กอ กา + ไ 
+        if len(syl) == 2 and syl[0] == 'ไ':
+            return False
         return True
 
     
     def get_result(self):
         full = ""
+        print(self.syl)
         self.check_syllable()
+        print(self.syl)
         for inSyl in self.syl:
             origInSyl = inSyl
             inSyl = [self.check_condition(inSyl), inSyl]
