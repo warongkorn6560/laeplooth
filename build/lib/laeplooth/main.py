@@ -55,7 +55,8 @@ class Translator:
         # ลำ ลัว ละ
         if syl[posSwap1].startswith(('ลำ', 'ลัว', 'ละ', 'ลา', 'ลั', 'ลู' ,'ลอ')) and not any(char in thai_tonemarks for char in syl[posSwap1]):
                 if not (syl[posSwap1].startswith('ลู') and len(syl[posSwap1]) < 3 and len(syl[posSwap2]) < 3):
-                    syl[posSwap1] = 'ห' + syl[posSwap1]
+                    if not (syl[posSwap1].startswith('ลำ') and syl[posSwap2][0] not in self.high_consonants):   
+                        syl[posSwap1] = 'ห' + syl[posSwap1]
         
         # ลินกู ลินกุน
         if syl[posSwap1][-1] in thai_consonants and syl[posSwap1][-1] not in ('ล', 'อ'):
@@ -112,6 +113,9 @@ class Translator:
         # ลวยควุย ลวยคุย
         if 'วุย' in syl[posSwap2]: 
             syl[posSwap2] = syl[posSwap2].replace('วุย', 'ุย')
+            
+        if '้ี' in syl[posSwap2]:
+            syl[posSwap2] = syl[posSwap2].replace('้ี', 'ี้')
 
         return syl
 
@@ -130,10 +134,21 @@ class Translator:
 
     def check_syllable(self):
         # create syllable 
+        
+       
+        #  กรรม 
+        if len(self.syl[0]) > 3 and 'รรม' in self.syl[0]:
+            self.syl = [self.syl[0][0] + 'ำ']
+  
+    
+        # ขนม ถนน
+        if len(self.syl[0]) == 3 and all(char in thai_consonants for char in self.syl[0]) and self.syl[0][1] != 'อ':
+            self.syl = [self.syl[0][0] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
+        
         # ลยามสุม หละสุหลามหยูม
         # ลโมยขุย หละขุโลยมุย
         # ตลาด -> ตะ หลาด
-        if len(self.syl[0]) >= 3 and all(char in thai_consonants for char in self.syl[0][:2]) and (self.syl[0][1] != 'ว') and (self.syl[0][2] != 'ะ'):
+        if len(self.syl[0]) > 3 and all(char in thai_consonants for char in self.syl[0][:2]) and (self.syl[0][1] != 'ว') and (self.syl[0][2] != 'ะ') and 'รร' not in self.syl[0]:
             self.syl = [self.syl[0][:1] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
         # เฉลย 
         if len(self.syl[0]) > 3 and self.syl[0].startswith('เ')  and self.syl[0].endswith('ลย'):
@@ -161,6 +176,9 @@ class Translator:
         # ขโมย -> ขะ โมย 
         if (self.syl[0][0] in thai_consonants and self.syl[0][1] not in thai_consonants) and all(char in thai_consonants for char in self.syl[0][-2:]) and self.syl[0][-2] != 'อ':
             self.syl = [self.syl[0][:1] + 'ะ',  self.syl[0][1:]] + self.syl[1:]
+                
+            
+        
         # if last syllable is 1 character merge it with previous syllable
         if len(self.syl[-1]) == 1:
             self.syl[-2] = self.syl[-2] + self.syl[-1]

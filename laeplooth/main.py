@@ -12,6 +12,20 @@ class Translator:
         self.remove_special_tokens()
         self.specialCase = re.compile(r'(อย|ห[งญนมยรลว]|กร|คร|ปร|พร|ตร|กล|คล|ปล|พล|กว|คว|[\u0E00-\u0E2E])')
         self.high_consonants = ['ข', 'ฃ', 'ฉ' ,'ฐ' ,'ถ' ,'ผ' ,'ฝ' ,'ศ' ,'ษ' ,'ส', 'ห']
+        self.low_consonants = ['ค', 'ฅ', 'ฆ', 'ง', 'ช', 'ซ', 'ฌ', 'ญ', 'ฑ', 'ฒ', 'ณ', 'ท', 'ธ', 'น', 'พ', 'ฟ', 'ภ', 'ม', 'ย', 'ร', 'ล', 'ว', 'ฬ',  'ฮ']
+        self.spell_1 = ['ก', 'ข', 'ค', 'ฆ']
+        self.spell_2 = ['จ' , 'ด' , 'ต' ,'ถ' ,'ท' , 'ธ' , 'ฎ' , 'ฏ' , 'ฑ' , 'ฒ' , 'ช' , 'ซ' , 'ศ' , 'ษ' , 'ส']
+        self.spell_3 = ['บ', 'ป', 'พ', 'ภ', 'ฟ', 'ฝ']
+        self.spell_4 = ['ห', 'ฮ']
+        self.spell_5 = ['ง']
+        self.spell_6 = ['ม']
+        self.spell_7 = ['ย']
+        self.spell_8 = ['ว']
+        self.spell_9 = ['ญ' ,'ณ', 'น', 'ร','ล', 'ฬ']
+        self.short_vowel = ['-ะ' , '-ิ' , '-ึ' , '-ุ' , 'เ-ะ' , 'แ-ะ' , 'โ-ะ' , 'เ-าะ' , 'เ-อะ' , 'เ-ียะ' , 'เ-ือะ' ,'-ัวะ' , 'ฤ' , 'ฦ' , '-ำ' , 'ไ-' , 'ใ-'  , 'เ-า']
+        self.long_vowel = ['-า',  '-ี', '-ื', '-ู', 'เ-', 'แ-', 'โ-', '-อ', 'เ-อ', 'เ-ีย', 'เ-ือ', '-ัว', 'ฤๅ', 'ฦๅ']
+        
+        
 
     def remove_special_tokens(self):
         if "<s/>" in self.syl:
@@ -42,6 +56,7 @@ class Translator:
         alpha1, pos1 = self.word2alpha(syl[posSwap1])
         alpha2, pos2 = self.word2alpha(syl[posSwap2])
 
+
         s1, s2 = list(syl[posSwap1]), list(syl[posSwap2])
 
         if len(alpha1) == 1:
@@ -55,19 +70,30 @@ class Translator:
         # ลำ ลัว ละ
         if syl[posSwap1].startswith(('ลำ', 'ลัว', 'ละ', 'ลา', 'ลั', 'ลู' ,'ลอ')) and not any(char in thai_tonemarks for char in syl[posSwap1]):
                 if not (syl[posSwap1].startswith('ลู') and len(syl[posSwap1]) < 3 and len(syl[posSwap2]) < 3):
-                    syl[posSwap1] = 'ห' + syl[posSwap1]
+                    if not (syl[posSwap1].startswith('ลำ') and syl[posSwap2][0] not in self.high_consonants):  
+                        # มา มาก นาก นาง ยาก จาม สาง  / จาก กาก บาก สาก บาก
+                        if not (syl[posSwap1] == 'ลา' or syl[posSwap2] in self.low_consonants or syl[posSwap2][0] in self.low_consonants):
+                            if syl[posSwap1][-1] not in self.low_consonants:
+                                syl[posSwap1] = 'ห' + syl[posSwap1]
         
         # ลินกู ลินกุน
         if syl[posSwap1][-1] in thai_consonants and syl[posSwap1][-1] not in ('ล', 'อ'):
-                syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
+                # มาก
+                if  'า' in syl[posSwap1]:
+                    syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1])
+                else:
+                    syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
 
         # ใล่ชู ใล่ชุ่ย, ไลปู ไลปุย
         if syl[posSwap1].startswith(('ใ', 'ไ')):
             syl[posSwap2] = syl[posSwap2].replace('ู', 'ุย')
-            
+
         if any(char in thai_tonemarks for char in syl[posSwap1]):
                 tone_mark = next((char for char in syl[posSwap1] if char in thai_tonemarks), '')
-                syl[posSwap2] = syl[posSwap2][:1] + tone_mark + syl[posSwap2][1:]
+                if(alpha1):
+                    syl[posSwap2] = syl[posSwap2][:2] + tone_mark + syl[posSwap2][2:]
+                else:
+                    syl[posSwap2] = syl[posSwap2][:1] + tone_mark + syl[posSwap2][1:]
 
         # ลำขู หลำขุม
         if syl[posSwap1][-1] == 'ำ':
@@ -112,6 +138,9 @@ class Translator:
         # ลวยควุย ลวยคุย
         if 'วุย' in syl[posSwap2]: 
             syl[posSwap2] = syl[posSwap2].replace('วุย', 'ุย')
+            
+        if '้ี' in syl[posSwap2]:
+            syl[posSwap2] = syl[posSwap2].replace('้ี', 'ี้')
 
         return syl
 
@@ -130,10 +159,22 @@ class Translator:
 
     def check_syllable(self):
         # create syllable 
+        
+       
+        #  กรรม 
+        if len(self.syl[0]) > 3 and 'รรม' in self.syl[0]:
+            self.syl = [self.syl[0][0] + 'ำ']
+  
+    
+        # ขนม ถนน
+        if len(self.syl[0]) == 3 and all(char in thai_consonants for char in self.syl[0]) and self.syl[0][1] != 'อ':
+            self.syl = [self.syl[0][0] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
+        
         # ลยามสุม หละสุหลามหยูม
         # ลโมยขุย หละขุโลยมุย
         # ตลาด -> ตะ หลาด
-        if len(self.syl[0]) >= 3 and all(char in thai_consonants for char in self.syl[0][:2]) and (self.syl[0][1] != 'ว') and (self.syl[0][2] != 'ะ'):
+        #  prevent อย
+        if len(self.syl[0]) > 3 and all(char in thai_consonants for char in self.syl[0][:2]) and (self.syl[0][1] != 'ว') and (self.syl[0][2] != 'ะ') and 'รร' not in self.syl[0] and self.syl[0][:2] != 'อย':
             self.syl = [self.syl[0][:1] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
         # เฉลย 
         if len(self.syl[0]) > 3 and self.syl[0].startswith('เ')  and self.syl[0].endswith('ลย'):
@@ -161,11 +202,53 @@ class Translator:
         # ขโมย -> ขะ โมย 
         if (self.syl[0][0] in thai_consonants and self.syl[0][1] not in thai_consonants) and all(char in thai_consonants for char in self.syl[0][-2:]) and self.syl[0][-2] != 'อ':
             self.syl = [self.syl[0][:1] + 'ะ',  self.syl[0][1:]] + self.syl[1:]
+                
+            
+        
         # if last syllable is 1 character merge it with previous syllable
         if len(self.syl[-1]) == 1:
             self.syl[-2] = self.syl[-2] + self.syl[-1]
             self.syl.pop()
             
+    def get_first_con(self, syl):
+        return next((char for char in syl if char in thai_consonants), '')
+    
+    def get_last_con(self, syl):   
+        return next((char for char in syl[::-1] if char in thai_consonants), '')
+    
+    def is_short_vowel(self, syl):
+        short_matches = re.findall('|'.join(self.short_vowel).replace('-', r'\w*'), syl)
+        return len(short_matches) > 0
+    
+    def is_long_vowel(self, syl):
+        long_matches = re.findall('|'.join(self.long_vowel).replace('-', r'\w*'), syl)
+        return len(long_matches) > 0
+    
+    def is_death(self, syl): 
+        # สระเสียงสั้น แม่กอกา
+        if self.is_short_vowel(syl) and syl[-1] not in thai_consonants:
+            return True
+        # มีพยัญชนะ ตัวเดียว + ไม่มีสระเสียงยาว
+        if len([char for char in syl if char in thai_consonants]) == 1 and not self.is_long_vowel(syl):
+            return True
+        # แม่ กบ กด กก
+        if any( self.get_last_con(syl) in spell for spell in [self.spell_1, self.spell_2, self.spell_3]):
+            return True
+        return False
+    
+    def is_h_prefix(self, syl):
+        # อักษรต่ำ ไม่มี ห
+        if self.get_first_con(syl) in self.low_consonants:
+            return False
+        # อักษรสูง มี ห 
+        if self.get_first_con(syl) in self.high_consonants:
+            return True
+        # กลาง เป็น ไม่มี ห
+        if self.get_first_con(syl) not in [self.high_consonants, self.low_consonants] and not self.is_death(syl):
+            return False
+        return True
+
+    
     def get_result(self):
         full = ""
         self.check_syllable()
