@@ -44,7 +44,7 @@ class Translator:
             return match.group(), match.start()
         return None, None
     
-    def spoonerism2syl(self, syl):
+    def spoonerism2syl(self, syl, origInSyl):
         syl = self.check_swap(syl)
         if len(syl) == 2:
             posSwap1, posSwap2 = 0, 1
@@ -66,15 +66,9 @@ class Translator:
 
         syl[posSwap1], syl[posSwap2] = "".join(s1), "".join(s2)
         
-
-        # ลำ ลัว ละ
-        if syl[posSwap1].startswith(('ลำ', 'ลัว', 'ละ', 'ลา', 'ลั', 'ลู' ,'ลอ')) and not any(char in thai_tonemarks for char in syl[posSwap1]):
-                if not (syl[posSwap1].startswith('ลู') and len(syl[posSwap1]) < 3 and len(syl[posSwap2]) < 3):
-                    if not (syl[posSwap1].startswith('ลำ') and syl[posSwap2][0] not in self.high_consonants):  
-                        # มา มาก นาก นาง ยาก จาม สาง  / จาก กาก บาก สาก บาก
-                        if not (syl[posSwap1] == 'ลา' or syl[posSwap2] in self.low_consonants or syl[posSwap2][0] in self.low_consonants):
-                            if syl[posSwap1][-1] not in self.low_consonants:
-                                syl[posSwap1] = 'ห' + syl[posSwap1]
+        # ลำ ลัว ละ    
+        if self.is_h_prefix(origInSyl):
+            syl[posSwap1] = 'ห' + syl[posSwap1]
         
         # ลินกู ลินกุน
         if syl[posSwap1][-1] in thai_consonants and syl[posSwap1][-1] not in ('ล', 'อ'):
@@ -158,14 +152,10 @@ class Translator:
             return "ลู"
 
     def check_syllable(self):
-        # create syllable 
-        
-       
         #  กรรม 
         if len(self.syl[0]) > 3 and 'รรม' in self.syl[0]:
             self.syl = [self.syl[0][0] + 'ำ']
-  
-    
+            
         # ขนม ถนน
         if len(self.syl[0]) == 3 and all(char in thai_consonants for char in self.syl[0]) and self.syl[0][1] != 'อ':
             self.syl = [self.syl[0][0] + 'ะ', 'ห' + self.syl[0][1:]] + self.syl[1:]
@@ -203,12 +193,15 @@ class Translator:
         if (self.syl[0][0] in thai_consonants and self.syl[0][1] not in thai_consonants) and all(char in thai_consonants for char in self.syl[0][-2:]) and self.syl[0][-2] != 'อ':
             self.syl = [self.syl[0][:1] + 'ะ',  self.syl[0][1:]] + self.syl[1:]
                 
-            
-        
         # if last syllable is 1 character merge it with previous syllable
-        if len(self.syl[-1]) == 1:
-            self.syl[-2] = self.syl[-2] + self.syl[-1]
-            self.syl.pop()
+        merged_array = []
+        for i, elem in enumerate(self.syl):
+            if len(elem) == 1 and i > 0:
+                merged_array[-1] += elem
+            else:
+                merged_array.append(elem)
+                
+        self.syl = merged_array
             
     def get_first_con(self, syl):
         return next((char for char in syl if char in thai_consonants), '')
@@ -233,7 +226,8 @@ class Translator:
             return True
         # แม่ กบ กด กก
         if any( self.get_last_con(syl) in spell for spell in [self.spell_1, self.spell_2, self.spell_3]):
-            return True
+            if len([char for char in syl if char in thai_consonants]) > 1:
+                return True
         return False
     
     def is_h_prefix(self, syl):
@@ -253,8 +247,9 @@ class Translator:
         full = ""
         self.check_syllable()
         for inSyl in self.syl:
+            origInSyl = inSyl
             inSyl = [self.check_condition(inSyl), inSyl]
-            full += "".join(self.spoonerism2syl(inSyl))
+            full += "".join(self.spoonerism2syl(inSyl,origInSyl))
         
         return full
 
