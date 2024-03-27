@@ -24,6 +24,7 @@ class Translator:
         self.spell_9 = ['ญ' ,'ณ', 'น', 'ร','ล', 'ฬ']
         self.short_vowel = ['-ะ' , '-ั' , '-ิ' , '-ึ' , '-ุ' , 'เ-ะ' , 'แ-ะ' , 'เ-็' , 'แ-็' , 'โ-ะ' , 'เ-าะ' , 'เ-อะ' , 'เ-ียะ' , 'เ-ือะ' ,'-ัวะ' , 'ฤ' , 'ฦ' , '-ำ' , 'ไ-' , 'ใ-'  , 'เ-า']
         self.long_vowel = ['-า',  '-ี', '-ื', '-ู', 'เ-', 'แ-', 'โ-', '-อ', 'เ-อ', 'เ-ีย', 'เ-ือ', '-ัว', 'ฤๅ', 'ฦๅ']
+        self.front_vowel = ['เ', 'แ', 'โ', 'ไ', 'ใ']
         
         
 
@@ -67,11 +68,13 @@ class Translator:
         syl[posSwap1], syl[posSwap2] = "".join(s1), "".join(s2)
         
    
-
-
         # ลำ ลัว ละ  
         if self.is_h_prefix(origInSyl) and not 'ห' in syl[posSwap1]:
-            syl[posSwap1] = 'ห' + syl[posSwap1]
+            if syl[posSwap1][0] in self.front_vowel:
+                # add 'ห' in second position
+                syl[posSwap1] = syl[posSwap1][0] + 'ห' + syl[posSwap1][1:]
+            else:
+                syl[posSwap1] = 'ห' + syl[posSwap1]
             if syl[posSwap1].startswith('หแ'):
                 syl[posSwap1] = syl[posSwap1].replace('หแ', 'แห')
                 
@@ -145,10 +148,15 @@ class Translator:
         if '้ี' in syl[posSwap2]:
             syl[posSwap2] = syl[posSwap2].replace('้ี', 'ี้')
             
+        # ดื่ม เป็น มี ่ อันเดียว
+        if not self.is_death(origInSyl):
+            syl[posSwap1] = syl[posSwap1].replace('่','')
+            
         # เหลา แหลง
         syl[posSwap1] = syl[posSwap1].replace('หส', 'ส')
         syl[posSwap2] = syl[posSwap2].replace('ุา', 'ุ').replace('ูา', 'ู')
-
+        
+        
         return syl
 
     def check_condition(self, syl):
@@ -167,6 +175,11 @@ class Translator:
             return "ลู"
 
     def check_syllable(self):
+        #  มาดริ้ง
+        if 'ริ้ง' in self.syl:
+            index = self.syl.index('ริ้ง')
+            self.syl[index] = self.syl[index - 1][-1] + self.syl[index]
+            self.syl[index -1] = self.syl[index - 1].replace('ด', '')
         #  กรรม 
         if len(self.syl[0]) > 3 and 'รรม' in self.syl[0]:
             self.syl = [self.syl[0][0] + 'ำ']
@@ -270,10 +283,8 @@ class Translator:
 
     
     def get_result(self):
-        full = ""
-        print(self.syl)
+        full = ""  
         self.check_syllable()
-        print(self.syl)
         for inSyl in self.syl:
             origInSyl = inSyl
             inSyl = [self.check_condition(inSyl), inSyl]
