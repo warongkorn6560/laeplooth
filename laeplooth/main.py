@@ -85,10 +85,11 @@ class Translator:
         # ลินกู ลินกุน
         if self.get_last_con(syl[posSwap1]) in thai_consonants and self.get_last_con(syl[posSwap1]) not in ('ล', 'อ'):
                 # มาก
-                if  self.is_short_vowel(syl[posSwap1]):
-                    syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
-                else:
-                    syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1])
+                if syl[posSwap1][-1] in thai_consonants:
+                    if  self.is_short_vowel(syl[posSwap1]):
+                        syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
+                    else:
+                        syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1])
 
         # ใล่ชู ใล่ชุ่ย, ไลปู ไลปุย
         if syl[posSwap1].startswith(('ใ', 'ไ')):
@@ -149,12 +150,23 @@ class Translator:
             syl[posSwap2] = syl[posSwap2].replace('้ี', 'ี้')
             
         # ดื่ม เป็น มี ่ อันเดียว
-        if not self.is_death(origInSyl):
+        if not self.is_death(origInSyl) and not any(char in self.low_consonants and char != 'ว' and char != origInSyl[-1] for char in origInSyl):
             syl[posSwap1] = syl[posSwap1].replace('่','')
+        
+        # ตบ
+        if self.is_short_vowel(syl[posSwap1]):
+            syl[posSwap2].replace('ู', 'ุ')
+      
             
         # เหลา แหลง
         syl[posSwap1] = syl[posSwap1].replace('หส', 'ส')
         syl[posSwap2] = syl[posSwap2].replace('ุา', 'ุ').replace('ูา', 'ู')
+        
+        
+        #เผา
+        if self.is_vowel_in(syl[posSwap1],'เ-า'):
+         syl[posSwap2] = syl[posSwap2] + 'ว'
+        
         
         
         return syl
@@ -175,6 +187,45 @@ class Translator:
             return "ลู"
 
     def check_syllable(self):
+        
+        # ['อา', 'เธอ', 'ร์'] '์'
+        if any('์' in syl for syl in self.syl if len(syl) < 3):
+            # get indices of strings containing '์'
+            removed_indices = [i for i, syl in enumerate(self.syl) if '์' in syl]
+            # remove strings containing '์'
+            self.syl = [syl for syl in self.syl if '์' not in syl]
+            # add vowel
+            if removed_indices:
+                if  any(char in thai_consonants for char in self.syl[removed_indices[0]-1]):
+                    matched_indices = next((index for index, char in enumerate(self.syl[removed_indices[0]-1]) if char in thai_consonants and char not in ['ห', 'อ']), None)
+                    if matched_indices is not None:
+                        selected_char = self.syl[removed_indices[0]-1][matched_indices]
+                        if selected_char not in self.high_consonants:
+                            added_vowel = '่' if selected_char in self.low_consonants else '้'
+                            self.syl[removed_indices[0]-1] = self.syl[removed_indices[0]-1][:matched_indices] + selected_char.replace(selected_char, selected_char + added_vowel) + self.syl[removed_indices[0]-1][matched_indices+1:]
+
+
+        # เบอร์เกอร์
+        if any('์' in syl for syl in self.syl if len(syl) > 2):
+           # get indices of strings containing '์'
+            removed_indices = [i for i, syl in enumerate(self.syl) if '์' in syl]
+            # remove strings containing '์'
+            result = []
+            for syl in self.syl:
+                index = syl.find('์')
+                if index != -1 and index != 0:  # If '์' is found and not at the beginning of the string
+                    result.append(syl[:index-1])
+                else:
+                    result.append(syl)
+            self.syl = result
+         
+        # 'ตามหา'
+        if 'มหา' in self.syl:
+            index = self.syl.index('มหา')
+            if self.syl[index-1][-1] == 'า':
+                self.syl[index-1] = self.syl[index-1] + 'ม'
+                self.syl[index] = 'หา'
+        
         #  มาดริ้ง
         if 'ริ้ง' in self.syl:
             index = self.syl.index('ริ้ง')
@@ -207,12 +258,14 @@ class Translator:
         # ไฉน
         if self.syl[0] == 'ไฉน':
             self.syl = ['ฉะ', 'ไหน']
+            
         # เสมียน เกษียณ เถลิง
         if len(self.syl[0]) > 4 and self.syl[0].startswith('เ') and (self.syl[0].endswith('ียน') or self.syl[0].endswith('ียณ') or self.syl[0].endswith('ลิง')):
             if self.syl[0][1] in self.high_consonants:
                 self.syl = [self.syl[0][1] + 'ะ', self.syl[0][:1] + 'ห' + self.syl[0][2:]]
             else:
                 self.syl = [self.syl[0][1] + 'ะ', self.syl[0][:1]  + self.syl[0][2:]]
+       
         # เสลา 
         if self.syl[0] == 'เสลา':
             self.syl = ['สะ', 'เหลา']
@@ -220,15 +273,13 @@ class Translator:
         # ขโมย -> ขะ โมย 
         if (self.syl[0][0] in thai_consonants and self.syl[0][1] not in thai_consonants) and all(char in thai_consonants for char in self.syl[0][-2:]) and self.syl[0][-2] != 'อ':
             self.syl = [self.syl[0][:1] + 'ะ',  self.syl[0][1:]] + self.syl[1:]
-            
-            
+             
         # อิดอก
         index = next((i for i, s in enumerate(self.syl) if s.startswith('อิด')), None)
         if index is not None:
             self.syl[index] = self.syl[index][:2]
             self.syl[index + 1] = 'ด' + self.syl[index + 1]
-
-                
+      
         # if last syllable is 1 character merge it with previous syllable
         merged_array = []
         for i, elem in enumerate(self.syl):
@@ -245,9 +296,13 @@ class Translator:
     def get_last_con(self, syl):   
         return next((char for char in syl[::-1] if char in thai_consonants), '')
     
+    def is_vowel_in(self, syl, vowel):
+        short_matches = re.findall('|'.join([vowel]).replace('-', r'\w*'), syl)
+        return len(short_matches) > 0
+    
     def is_short_vowel(self, syl):
         short_matches = re.findall('|'.join(self.short_vowel).replace('-', r'\w*'), syl)
-        return len(short_matches) > 0
+        return len(short_matches) > 0 or all(char in thai_consonants and char != 'ล' for char in syl)
     
     def is_long_vowel(self, syl):
         long_matches = re.findall('|'.join(self.long_vowel).replace('-', r'\w*'), syl)
