@@ -59,15 +59,19 @@ class Translator:
 
 
         s1, s2 = list(syl[posSwap1]), list(syl[posSwap2])
-
         if len(alpha1) == 1:
             s1[pos1], s2[pos2] = alpha2, alpha1
         else:
-            s1[pos1], s1[pos1 + 1], s2[pos2] = 'ห', alpha2, alpha1
+            # not ความ
+            s1[pos1], s1[pos1 + 1], s2[pos2] = ('ห', alpha2, alpha1) if not any(char in self.low_consonants for char in s2[pos2]) else ('', alpha2, alpha1)
+
 
         syl[posSwap1], syl[posSwap2] = "".join(s1), "".join(s2)
         
-   
+        
+
+ 
+    
         # ลำ ลัว ละ  
         if self.is_h_prefix(origInSyl) and not 'ห' in syl[posSwap1]:
             if syl[posSwap1][0] in self.front_vowel:
@@ -77,7 +81,7 @@ class Translator:
                 syl[posSwap1] = 'ห' + syl[posSwap1]
             if syl[posSwap1].startswith('หแ'):
                 syl[posSwap1] = syl[posSwap1].replace('หแ', 'แห')
-                
+       
         # หมู
         if('หลู' == syl[posSwap1]):
             syl[posSwap1] = syl[posSwap1].replace('หลู', 'ลู')
@@ -90,7 +94,8 @@ class Translator:
                         syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1]).replace('ู', 'ุ')
                     else:
                         syl[posSwap2] = (syl[posSwap2] + syl[posSwap1][-1])
-
+                        
+        
         # ใล่ชู ใล่ชุ่ย, ไลปู ไลปุย
         if syl[posSwap1].startswith(('ใ', 'ไ')):
             syl[posSwap2] = syl[posSwap2].replace('ู', 'ุย')
@@ -101,7 +106,7 @@ class Translator:
                     syl[posSwap2] = syl[posSwap2][:2] + tone_mark + syl[posSwap2][2:]
                 else:
                     syl[posSwap2] = syl[posSwap2][:1] + tone_mark + syl[posSwap2][1:]
-
+                    
         # ลำขู หลำขุม
         if syl[posSwap1][-1] == 'ำ':
             syl[posSwap2] = syl[posSwap2].replace('ู', 'ุม')
@@ -139,7 +144,7 @@ class Translator:
             syl[posSwap2] = syl[posSwap2].replace('ุ', 'ิ')
         
         # หลย ลวย
-        if syl[posSwap1] == 'หลย':
+        if syl[posSwap1] == 'หลย' or syl[posSwap1] == 'ลย':
             syl[posSwap1] = 'ลวย'
             
         # ลวยควุย ลวยคุย
@@ -167,6 +172,10 @@ class Translator:
         if self.is_vowel_in(syl[posSwap1],'เ-า'):
          syl[posSwap2] = syl[posSwap2] + 'ว'
         
+        # ไหล
+        if syl[posSwap2] == 'หลุส':
+            syl[posSwap2] = 'หลุว'
+        
         
         
         return syl
@@ -187,6 +196,7 @@ class Translator:
             return "ลู"
 
     def check_syllable(self):
+                    
         
         # ['อา', 'เธอ', 'ร์'] '์'
         if any('์' in syl for syl in self.syl if len(syl) < 3):
@@ -203,7 +213,6 @@ class Translator:
                         if selected_char not in self.high_consonants:
                             added_vowel = '่' if selected_char in self.low_consonants else '้'
                             self.syl[removed_indices[0]-1] = self.syl[removed_indices[0]-1][:matched_indices] + selected_char.replace(selected_char, selected_char + added_vowel) + self.syl[removed_indices[0]-1][matched_indices+1:]
-
 
         # เบอร์เกอร์
         if any('์' in syl for syl in self.syl if len(syl) > 2):
@@ -279,15 +288,24 @@ class Translator:
         if index is not None:
             self.syl[index] = self.syl[index][:2]
             self.syl[index + 1] = 'ด' + self.syl[index + 1]
-      
+            
+         # ลดา
+        # find index of 'ลดา' in self.syl
+        index = next((i for i, s in enumerate(self.syl) if s == 'ลดา'), None)
+        if index:
+            self.syl[index] = 'ละ' 
+            # add 'ดา' to next index
+            self.syl.append('ดา')
+            
         # if last syllable is 1 character merge it with previous syllable
         merged_array = []
         for i, elem in enumerate(self.syl):
             if len(elem) == 1 and i > 0:
-                merged_array[-1] += elem
+                if elem != ' ':
+                    merged_array[-1] += elem
             else:
                 merged_array.append(elem)
-                
+                    
         self.syl = merged_array
             
     def get_first_con(self, syl):
@@ -302,7 +320,7 @@ class Translator:
     
     def is_short_vowel(self, syl):
         short_matches = re.findall('|'.join(self.short_vowel).replace('-', r'\w*'), syl)
-        return len(short_matches) > 0 or all(char in thai_consonants and char != 'ล' for char in syl)
+        return len(short_matches) > 0 or (all(char in thai_consonants and char != 'อ' for char in syl) and not syl.startswith('ลย'))
     
     def is_long_vowel(self, syl):
         long_matches = re.findall('|'.join(self.long_vowel).replace('-', r'\w*'), syl)
