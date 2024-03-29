@@ -171,6 +171,10 @@ class Translator:
         #เผา
         if self.is_vowel_in(syl[posSwap1],'เ-า'):
          syl[posSwap2] = syl[posSwap2] + 'ว'
+         
+        # ตอแหล
+        if syl[posSwap2] == 'หลูส':
+            syl[posSwap2] = 'หลู'
         
         # ไหล
         if syl[posSwap2] == 'หลุส':

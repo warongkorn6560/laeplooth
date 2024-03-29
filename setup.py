@@ -6,7 +6,7 @@ with open('README.md', 'r') as f:
 setup(
     name='laeplooth',
     packages=find_packages(include=['laeplooth']),
-    version='0.6.0',
+    version='0.6.1',
     description='Translator for loo language',
     author='most.warong',
     install_requires=[
